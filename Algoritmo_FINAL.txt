@@ -1,0 +1,86 @@
+section	.text
+global _start       ;must be declared for using gcc                     
+ORG 0x0000
+
+START:
+
+    MOV MULTIPLICANDO, 0x0010      ; Inicializar el registro 0 para que almacene 16 bites
+    MOV MULTIPLICADOR, 0x0010      ; Inicializar el registro 1 para que almacene 16 bites
+    MOV MULTIPLICANDO, 5
+    MOV MULTIPLICADOR, 2
+    MOV R0, [MULTIPLICANDO]  ; Carga el primer valor en el registro R0
+    MOV R1, [MULTIPLICADOR]  ; Carga el segundo valor en el registro R1
+    MOV A, 0            ; Inicializar el registro A con ceros
+    MOV ACC, 0          ; Inicializar el registro ACC con ceros
+
+    
+    INV R1
+    ; Rutina de multiplicación
+    MOV R2, 16 ; Contador de iteraciones
+
+BOOTH_LOOP:
+    CALL Verificar_bits ;se llama la rutina que verifica los bits del multiplicador
+    AND R5, R5 ; se hace and con el mismo
+    JZ booth_shift ; Salta si es 0 a booth_shift
+
+    AND R6, R5, 0x3 ; Obtener los dos bits menos significativos de R5
+    AND R7, R6, 0x2 ; Obtener el segundo bit menos significativo de R6
+    AND R8, R6, 0x1 ; Obtener el bit menos significativo de R6
+    JZ skip_subtract ; Saltar si el segundo bit menos significativo es cero
+    MOV R9, 0x1 ; Cargar el valor 0x1 en R9
+    INV R9 ; Invertir el valor de R9 para obtener -1
+    ADD R6, R6, R9 ; Restar 1 a R6
+
+skip_subtract:
+   JZ booth_shift ; Saltar si el bit menos significativo es cero
+
+    AND R7, R5, 0x1     ; Aplicar una máscara de bits (0x1) para obtener el último bit en R5
+    INV R7              ; Invertir el valor del último bit en R7
+    AND R7, R7, 0x1     ; Aplicar una máscara de bits (0x1) para eliminar cualquier otro bit adicional generado por la operación de inversión
+    JZ booth_suma       ; Saltar a booth_suma si R7 es igual a cero (los dos últimos bits son "01")
+    
+    MOV R8, R5 ;        ;Mover el contenido de R5 a R8
+    INV R8              ;Invertir el valor de R8
+    AND R9, R8,R5       ;Guardar el AND entre R8 y R5
+    JZ booth_su         ;Saltar a booth_su si R9 es 0 (los dos utlimos bits son "10")
+
+booth_suma:
+    ADD RE, R5, R0 ; RE = RE + MULTIPLICANDO
+    RET
+
+booth_su:
+    MOV R12,R0
+    INV R12
+    ADD RE, R5, R12; AC = AC + (~M)
+    ADD RE, RE, 1 ; AC = AC + 1
+    RET
+
+booth_shift:
+    AND R10, RE, 0x1   ; Obtener el último bit de la variable en R2
+    ADD R10, R10, R10    ; Duplicar el valor del último bit
+    AND RE, RE, 0xFFFE ; Borrar el último bit de la variable utilizando una máscara de bits
+    DIV RE, RE, 2     ; Dividir la variable por 2 para realizar el desplazamiento de 1 bit a la derecha
+    ADD RE, RE, R10    ; Sumar el valor duplicado del último bit a la variable desplazada
+   
+   ;Decrementar contador y continuar itereacion
+   MOV R11, R2 ; Cargamos el valor de la variable en el registro R11
+   INV R11 ; Invertimos todos los bits del valor en R11
+   ADD R11, 1 ; Sumamos 1 al valor invertido
+   INV R0 ; Invertimos nuevamente todos los bits para obtener el resultado final
+   MOV R2, R11 ; Almacenamos el nuevo valor de R11 de vuelta en la variable R2
+   JZ booth_final
+
+booth_final:
+    MOV resultado,RE ; Movel el resultado de RE a resultado  
+    MOV A, resultado  ; Mover los 8 bits más significativos de "resultado" al registro A
+    MOV ACC, resultado  ; Mover los 8 bits menos significativos de "resultado" al registro ACC
+
+    MOV [dir1], A  ; Almacenar el contenido del registro A en la posición de memoria "dir1"
+    MOV [dir2], ACC  ; Almacenar el contenido del registro ACC en la posición de memoria "dir2"
+
+    HALT ; Finalizar el programa
+
+    ; Subrutinas:
+Verificar_bits:
+    AND R5, R1, 0x3 ; "AND" bit a bit entre los registros R1 y un valor constante de 0x3 y almacena el resultado en el registro R5.
+    RET

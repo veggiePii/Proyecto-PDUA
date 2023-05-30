@@ -1,0 +1,149 @@
+; Sección de texto
+0010000000000000 ; ORG 0x0000
+
+; Punto de entrada
+0010000100000000 ; START:
+
+; Inicializar registros
+0110001000000000 ; MOV MULTIPLICANDO, 0x0010
+0110011000000000 ; MOV MULTIPLICADOR, 0x0010
+0110001000000101 ; MOV MULTIPLICANDO, 5
+0110011000000010 ; MOV MULTIPLICADOR, 2
+0100000000000000 ; MOV R0, [MULTIPLICANDO]
+0100010000000000 ; MOV R1, [MULTIPLICADOR]
+0110100000000000 ; MOV A, 0
+0110110000000000 ; MOV ACC, 0
+
+; Invertir R1
+1001000100000000 ; INV R1
+
+; Rutina de multiplicación
+0110100000010000 ; MOV R2, 16
+; Etiqueta de bucle
+0110111000010000 ; BOOTH_LOOP:
+
+; Llamar a la rutina Verificar_bits
+1111111111110000 ; CALL Verificar_bits
+
+; Realizar AND con R5
+1101001000000000 ; AND R5, R5
+
+; Saltar a booth_shift si R5 es igual a cero
+1011001000000101 ; JZ R5, booth_shift
+
+; Restar 0x3 a R6
+0101100110000011 ; SUB R6, R5, 0x3
+
+; Aplicar máscara de bits a R6
+1101100110000011 ; AND R6, R6, 0x3
+
+; Saltar a booth_shift si R6 es igual a cero
+1011001000010000 ; JZ booth_shift
+
+; Obtener último bit en R7
+1101011000000001 ; AND R7, R5, 0x1
+
+; Invertir valor de R7
+1001001100000000 ; INV R7
+
+; Aplicar máscara de bits a R7
+1101011000000001 ; AND R7, R7, 0x1
+
+; Saltar a booth_suma si R7 es igual a cero
+1011001110000000 ; JZ booth_suma
+
+; Copiar valor de R5 a R8
+0101100000000000 ; MOV R8, R5
+
+; Invertir valor de R8
+1001000000000000 ; INV R8
+
+; Realizar AND entre R8 y R5
+1101110000000000 ; AND R9, R8, R5
+
+; Saltar a booth_su
+1011001110000101 ; JZ booth_su
+
+; Etiqueta booth_suma
+1001100000000000 ; booth_suma:
+; Sumar MULTIPLICANDO a RE
+0001000110000000 ; ADD RE, R5, R0
+
+; Retornar
+0111110000000000 ; RET
+
+; Etiqueta booth_su
+1001100010000000 ; booth_su:
+; Cargar MULTIPLICANDO invertido en R12
+0110010000000000 ; MOV R12, R0
+1001001000000000 ; INV R12
+
+; Sumar R12 a RE
+0001000111000000 ; ADD RE, R5, R12
+
+; Sumar 1 a RE
+0001000111000001 ; ADD RE, RE, 1
+
+; Retornar
+0111110000000000 ; RET
+
+; Etiqueta booth_shift
+1001100100000000 ; booth_shift:
+; Obtener último bit en R10
+1101010000000001 ; AND R10, RE, 0x1
+
+; Duplicar valor de R10
+0001010000000000 ; ADD R10, R10, R10
+
+; Borrar último bit de RE
+1101110000000001 ; AND RE, RE, 0xFFFE
+
+; Dividir RE por 2
+0111100000000010 ; DIV RE, RE, 2
+
+; Sumar valor duplicado de último bit a RE
+0001010000000000 ; ADD RE, RE, R10
+
+; Copiar valor de R2 a R11
+0101110000000010 ; MOV R11, R2
+
+; Invertir valor de R11
+1001011100000000 ; INV R11
+
+; Sumar 1 al valor invertido
+0001011100000001 ; ADD R11, R11, 1
+
+; Invertir valor de R0
+1001000000000000 ; INV R0
+
+; Copiar nuevo valor de R11 a R2
+0100111000000010 ; MOV R2, R11
+
+; Saltar a booth_final si R2 es igual a cero
+1011001110000000 ; JZ booth_final
+
+; Etiqueta booth_final
+1001110000000000 ; booth_final:
+; Mover resultado a memoria
+0100100000000000 ; MOV resultado, RE
+
+; Mover 8 bits más significativos de resultado a A
+0100010000000000 ; MOV A, resultado
+
+; Mover 8 bits menos significativos de resultado a ACC
+0100110000000000 ; MOV ACC, resultado
+
+; Almacenar contenido de A en dir1
+0101010000000000 ; MOV [dir1], A
+
+; Almacenar contenido de ACC en dir2
+0101100000000000 ; MOV [dir2], ACC
+
+; Detener programa
+0110111000000000 ; HALT
+
+; Subrutina Verificar_bits
+; Realizar AND bit a bit entre R1 y 0x3, almacenar resultado en R5
+1101001000000011 ; AND R5, R1, 0x3
+; Retornar
+0111110000000000 ; RET

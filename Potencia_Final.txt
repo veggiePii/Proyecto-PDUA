@@ -1,0 +1,35 @@
+#JULIANA CAMILA CASTRO NEIZA
+
+section	.text
+	global _start       ;must be declared for using gcc
+inicio:                     ;tell linker entry point
+    MOV BASE, 0X0010   ; Almacena 16 bits de almacenamiento para base 
+    MOV EXPONENTE, 0x0010   ; Almacena 16 bits de almacenamiento para exponente
+    MOV R1, 2          ; Mover el valor 2 a R1
+    MOV [BASE], R1   ; Almacenar el contenido de AX en la dirección de Base
+    MOV R1, [BASE]         ; Mover el valor de la base 'x' a R1
+    
+    MOV R2, 3          ; Mover el valor 3 a R2
+    MOV [EXPONENTE], R2   ; Almacenar el contenido de AX en la dirección de exponente
+    MOV R2, [EXPONENTE]    ; Mover el valor del exponente 'y' a R2
+    
+    MOV R3, R1             ; Copiar el valor de la base a R3
+    MOV R4, 1             ; Inicializar R4 en 1 (para el resultado parcial)
+    MOV R5, [R2]          ;  Almacenar el contenido de exponente para hacer las iteraciones
+
+CALCULO_POTENCIA:
+    MOV R6, R5             ; Copiar el valor del contador a R6
+    AND R6, R6              ; Realizar una operación lógica AND consigo misma
+    JZ FIN                 ; Si el contador es cero, terminar el cálculo
+
+    MUL R4, R3             ; Multiplicar el resultado parcial por la base
+    SUB R5, R5, 1          ; decrementar el contador
+    JMP CALCULO_POTENCIA   ; Volver al bucle para seguir calculando la potencia
+
+FIN:
+    MOV [RESULTADO], R4    ; Almacenar el resultado final en la memoria
+    MOV ACC, R4            ; Mover el resultado final a ACC (LSBs)
+    MOV A, R4, L           ; Mover los MSBs del resultado final a A (MSBs)
+    END                   ; Finalizar la ejecución del programa
+    
+    
